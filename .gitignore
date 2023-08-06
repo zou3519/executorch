@@ -7,3 +7,4 @@ __pycache__/
 build/lib/
 exir/serialize/scalar_type.fbs
 exir/serialize/program.fbs
+.vscode/
