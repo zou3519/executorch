@@ -55,9 +55,6 @@ option(REGISTER_EXAMPLE_CUSTOM_OP_2
        "Register custom operator defined in examples/custom_ops/custom_ops_2.py"
        OFF)
 
-# option to build library to register into PyTorch runtime
-option(BUILD_CUSTOM_OPS_AOT_LIB "Build library to register into PyTorch runtime" OFF)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)

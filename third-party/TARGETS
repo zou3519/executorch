@@ -220,7 +220,10 @@ runtime.genrule(
     name = "libtorch_gen",
     out = "libtorch.so",
     srcs = ["link_torch.sh"],
-    bash = 'bash $SRCS torch/lib/libtorch.so ${OUT}',
+    bash = select({
+        "ovr_config//os:macos": 'bash $SRCS torch/lib/libtorch.dylib ${OUT}',
+        "ovr_config//os:linux": 'bash $SRCS torch/lib/libtorch.so ${OUT}',
+    })
 )
 
 runtime.genrule(

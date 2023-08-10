@@ -35,7 +35,6 @@ _EXTERNAL_DEPS = {
     "pybind11": [],  # TODO(larryliu0820): Add support
     # Core C++ PyTorch functionality like Tensor and ScalarType.
     "torch-core-cpp": [],  # TODO(larryliu0820): Add support
-    "torch-headers": "//third-party:torch_headers",
     "torchgen": "//third-party:torchgen",
 }
 

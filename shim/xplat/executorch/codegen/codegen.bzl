@@ -228,6 +228,7 @@ def _prepare_custom_ops_genrule_and_lib(
 def exir_custom_ops_aot_lib(
         name,
         yaml_target = None,
+        aten_kernel_srcs = [],
         visibility = [],
         kernels = [],
         deps = [],
@@ -270,7 +271,7 @@ def exir_custom_ops_aot_lib(
             srcs = [
                 ":{}[{}]".format(libs[compiler_lib]["genrule"], f)
                 for f in libs[compiler_lib]["srcs"]
-            ],
+            ] + aten_kernel_srcs,
             headers = {
                 "CustomOpsNativeFunctions.h": ":{}[CustomOpsNativeFunctions.h]".format(libs[compiler_lib]["genrule"]),
             },
@@ -291,6 +292,7 @@ def exir_custom_ops_aot_lib(
             supports_python_dlopen = True,
             platforms = platforms,
             compiler_flags = compiler_flags,
+            preferred_linkage = "shared",
         )
 
 def executorch_generated_lib(
