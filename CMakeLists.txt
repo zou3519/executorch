@@ -44,16 +44,16 @@ cmake_minimum_required(VERSION 3.19)
 project(executorch)
 include(build/Utils.cmake)
 
-# option to register custom operator `my_ops::mul3` in
-# `examples/custom_ops/custom_ops_1.py`
-option(REGISTER_EXAMPLE_CUSTOM_OP_1
-       "Register custom operator defined in examples/custom_ops/custom_ops_1.py"
+# Option to register custom operator `my_ops::mul3` or `my_ops::mul4` or no custom ops at all. 
+# Custom ops are defined in `examples/custom_ops/custom_ops_1.py` and `examples/custom_ops/custom_ops_2.cpp`.
+option(REGISTER_EXAMPLE_CUSTOM_OP
+       "Register whether custom op 1 (my_ops::mul3) or custom op 2 (my_ops::mul4) or no custom op at all."
        OFF)
-# option to register custom operator `my_ops::mul4` in
-# `examples/custom_ops/custom_ops_2.py`
-option(REGISTER_EXAMPLE_CUSTOM_OP_2
-       "Register custom operator defined in examples/custom_ops/custom_ops_2.py"
-       OFF)
+
+# Option to register quantized ops with quantized kernels. See kernels/quantized/CMakeLists.txt
+option(REGISTER_QUANTIZED_OPS
+      "Register quantized ops defined in kernels/quantized/"
+      OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_CXX_STANDARD)
@@ -69,7 +69,7 @@ endif()
 # TODO(dbort): Fix these warnings and remove this flag.
 set(_common_compile_options -Wno-deprecated-declarations)
 
-if(REGISTER_EXAMPLE_CUSTOM_OP_2)
+if(REGISTER_EXAMPLE_CUSTOM_OP EQUAL 2)
   # Need to be linked to a shared library
   list(APPEND _common_compile_options -fPIC)
 endif()
@@ -280,10 +280,16 @@ if(NOT CMAKE_TOOLCHAIN_FILE MATCHES ".*ios\.toolchain\.cmake$")
   target_compile_options(executor_runner PUBLIC ${_common_compile_options})
 endif()
 
-# Generate custom_ops_lib based on REGISTER_EXAMPLE_CUSTOM_OPS
-if(REGISTER_EXAMPLE_CUSTOM_OP_1 OR REGISTER_EXAMPLE_CUSTOM_OP_2)
+# Generate custom_ops_lib based on REGISTER_EXAMPLE_CUSTOM_OP
+if(REGISTER_EXAMPLE_CUSTOM_OP EQUAL 1 OR REGISTER_EXAMPLE_CUSTOM_OP EQUAL 2)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/examples/custom_ops)
   target_link_libraries(executor_runner custom_ops_lib)
+endif()
+
+# Generate lib to register quantized ops
+if(REGISTER_QUANTIZED_OPS)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/kernels/quantized)
+  target_link_libraries(executor_runner quantized_ops_lib)
 endif()
 
 # Print all summary

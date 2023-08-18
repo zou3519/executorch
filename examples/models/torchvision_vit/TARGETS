@@ -1,14 +1,15 @@
-load("@fbcode_macros//build_defs:python_library.bzl", "python_library")
+load("@fbsource//xplat/executorch/build:runtime_wrapper.bzl", "runtime")
 
-python_library(
+runtime.python_library(
     name = "vit_export",
     srcs = [
         "__init__.py",
         "export.py",
     ],
     base_module = "executorch.examples.models.torchvision_vit",
-    deps = [
-        "//caffe2:torch",
-        "//pytorch/vision:torchvision",
-    ],
+#    deps = [
+#        "//pytorch/vision:torchvision",
+#    ],
+    external_deps = ["libtorch"],
+    visibility = ["//executorch/examples/models:models"],
 )
