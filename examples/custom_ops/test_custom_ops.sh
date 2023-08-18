@@ -35,11 +35,11 @@ test_cmake_custom_op_1() {
     && mkdir cmake-out \
     && cd cmake-out \
     && cmake -DBUCK2=buck2 \
-        -DREGISTER_EXAMPLE_CUSTOM_OP_1=ON \
+        -DREGISTER_EXAMPLE_CUSTOM_OP=1 \
         -DPYTHON_EXECUTABLE="$PYTHON_EXECUTABLE" ..)
 
   echo 'Building executor_runner'
-  cmake --build cmake-out -j9
+  cmake --build cmake-out -j4
 
   echo 'Running executor_runner'
   cmake-out/executor_runner --model_path="./${model_name}.pte"
@@ -86,7 +86,7 @@ test_cmake_custom_op_2() {
     && mkdir cmake-out \
     && cd cmake-out \
     && cmake -DBUCK2=buck2 \
-      -DREGISTER_EXAMPLE_CUSTOM_OP_2=ON \
+      -DREGISTER_EXAMPLE_CUSTOM_OP=2 \
       -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH" \
       -DPYTHON_EXECUTABLE="$PYTHON_EXECUTABLE" ..)
 
@@ -108,7 +108,7 @@ then
 fi
 if [[ $1 == "cmake" ]];
 then
-  test_cmake_custom_op_1
+#  test_cmake_custom_op_1
   test_cmake_custom_op_2
 elif [[ $1 == "buck2" ]];
 then

@@ -1,13 +1,12 @@
-load("@fbcode_macros//build_defs:python_library.bzl", "python_library")
+load("@fbsource//xplat/executorch/build:runtime_wrapper.bzl", "runtime")
 
-python_library(
+runtime.python_library(
     name = "models",
     srcs = [
         "__init__.py",
         "models.py",
     ],
     deps = [
-        "//caffe2:torch",
         "//executorch/examples/models/inception_v3:ic3_export",
         "//executorch/examples/models/mobilenet_v2:mv2_export",
         "//executorch/examples/models/mobilenet_v3:mv3_export",
@@ -15,4 +14,5 @@ python_library(
         "//executorch/examples/models/wav2letter:w2l_export",
         "//executorch/exir/backend:compile_spec_schema",
     ],
+    external_deps = ["libtorch"],
 )

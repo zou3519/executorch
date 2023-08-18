@@ -1,14 +1,15 @@
-load("@fbcode_macros//build_defs:python_library.bzl", "python_library")
+load("@fbsource//xplat/executorch/build:runtime_wrapper.bzl", "runtime")
 
-python_library(
+runtime.python_library(
     name = "w2l_export",
     srcs = [
         "__init__.py",
         "export.py",
     ],
     base_module = "executorch.examples.models.wav2letter",
-    deps = [
-        "//caffe2:torch",
-        "//pytorch/audio:torchaudio",
-    ],
+#    deps = [
+#        "//pytorch/audio:torchaudio",
+#    ],
+    external_deps = ["libtorch"],
+    visibility = ["//executorch/examples/models:models"],
 )
