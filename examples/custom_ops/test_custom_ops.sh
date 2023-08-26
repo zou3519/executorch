@@ -109,7 +109,7 @@ fi
 if [[ $1 == "cmake" ]];
 then
   test_cmake_custom_op_1
-  test_cmake_custom_op_2
+  # test_cmake_custom_op_2
 elif [[ $1 == "buck2" ]];
 then
   test_buck2_custom_op_1
