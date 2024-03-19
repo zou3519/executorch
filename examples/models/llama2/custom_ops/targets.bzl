@@ -1,6 +1,34 @@
 load("@fbsource//xplat/executorch/build:runtime_wrapper.bzl", "runtime")
 load("@fbsource//xplat/executorch/codegen:codegen.bzl", "et_operator_library", "executorch_generated_lib")
-load("@fbsource//xplat/executorch/kernels/test:util.bzl", "codegen_function_header_wrapper")
+# load("@fbsource//xplat/executorch/kernels/test:util.bzl", "codegen_function_header_wrapper")
+
+def codegen_function_header_wrapper(kernel_path, kernel_name):
+    """Produces a file (FunctionHeaderWrapper.h) which simply includes the real
+    Functions.h for the specified kernel.
+
+    Generate the wrapper for each kernel (except aten where we can use portable).
+    Use target "function_header_wrapper_<kernel_name>" in tests.
+
+    For ATen kernel, use portable as we use its functions.yaml
+    """
+    header = "\"#include <{}/Functions.h>\"".format(kernel_path)
+
+    runtime.genrule(
+        name = "gen_function_header_wrapper_{}".format(kernel_name),
+        cmd = "echo " + header + " > $OUT/FunctionHeaderWrapper.h",
+        outs = {"FunctionHeaderWrapper.h": ["FunctionHeaderWrapper.h"]},
+        default_outs = ["."],
+    )
+
+    runtime.cxx_library(
+        name = "function_header_wrapper_{}".format(kernel_name),
+        exported_headers = {
+            "FunctionHeaderWrapper.h": ":gen_function_header_wrapper_{}[FunctionHeaderWrapper.h]".format(kernel_name),
+        },
+        # TODO(T149423767): So far we have to expose this to users. Ideally this part can also be codegen.
+        _is_external_target = True,
+        visibility = ["//executorch/...", "//pye/..."],
+    )
 
 def define_tests():
     codegen_function_header_wrapper("executorch/examples/models/llama2/custom_ops", "custom_ops")

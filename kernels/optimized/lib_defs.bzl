@@ -1,4 +1,4 @@
-load("@fbsource//tools/build_defs:default_platform_defs.bzl", "DEVSERVER_PLATFORM_REGEX")
+# load("@fbsource//tools/build_defs:default_platform_defs.bzl", "DEVSERVER_PLATFORM_REGEX")
 load("@fbsource//xplat/executorch/build:runtime_wrapper.bzl", "runtime")
 
 # Because vec exists as a collection of header files, compile and preprocessor
@@ -9,6 +9,7 @@ load("@fbsource//xplat/executorch/build:runtime_wrapper.bzl", "runtime")
 # functions in order to declare the required compiler flags needed in order to
 # access CPU vector intrinsics.
 
+DEVSERVER_PLATFORM_REGEX = "^(linux-.*|platform[0-9]{3}(-aarch64)?-(clang|clang-12|clang-15|gcc)(-nosan)?(-split-dwarf)?)$"
 def get_vec_android_preprocessor_flags():
     preprocessor_flags = [
         (
@@ -128,13 +129,13 @@ def define_libs():
                 ],
             ),
         ],
-        fbobjc_exported_preprocessor_flags = [
-            "-DET_BUILD_WITH_BLAS",
-            "-DET_BUILD_FOR_APPLE",
-        ],
-        fbobjc_frameworks = [
-            "Accelerate",
-        ],
+        # fbobjc_exported_preprocessor_flags = [
+        #     "-DET_BUILD_WITH_BLAS",
+        #     "-DET_BUILD_FOR_APPLE",
+        # ],
+        # fbobjc_frameworks = [
+        #     "Accelerate",
+        # ],
         exported_deps = [
             "//executorch/kernels/optimized:libutils",
             "//executorch/runtime/core/exec_aten:lib",
