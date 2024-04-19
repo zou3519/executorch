@@ -16,12 +16,12 @@ from torch.ao.quantization.quantize_pt2e import convert_pt2e, prepare_pt2e
 from ...portable.utils import save_pte_program
 
 from .compiler import export_to_edge
-from .quantizer import (
-    CadenceBaseQuantizer,
-    QuantFusion,
+from .compiler.passes import (
     ReplacePT2DequantWithCadenceDequant,
     ReplacePT2QuantWithCadenceQuant,
 )
+from .quantizer import CadenceBaseQuantizer, QuantFusion
+
 from .utils import print_ops_info
 
 

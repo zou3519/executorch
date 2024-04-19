@@ -10,7 +10,6 @@ from math import frexp, isclose, trunc
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 import torch
-from executorch.exir.dialects._ops import ops as exir_ops
 from executorch.exir.pass_base import ExportPass
 
 from torch import fx
@@ -819,37 +818,3 @@ class QuantFusion(ExportPass):
         for n in nodes:
             # pyre-fixme[7]: Incompatible return type
             n.meta["QuantFusion"] = True
-
-
-class ReplacePT2QuantWithCadenceQuant(ExportPass):
-    """
-    Replace the pt2 quantization ops with custom cadence quantization ops.
-    """
-
-    def call_operator(self, op, args, kwargs, meta):
-        if op not in {exir_ops.edge.quantized_decomposed.quantize_per_tensor.default}:
-            return super().call_operator(op, args, kwargs, meta)
-
-        return super().call_operator(
-            exir_ops.edge.cadence.quantize_per_tensor.default,
-            args,
-            kwargs,
-            meta,
-        )
-
-
-class ReplacePT2DequantWithCadenceDequant(ExportPass):
-    """
-    Replace the pt2 dequantization ops with custom cadence dequantization ops.
-    """
-
-    def call_operator(self, op, args, kwargs, meta):
-        if op not in {exir_ops.edge.quantized_decomposed.dequantize_per_tensor.default}:
-            return super().call_operator(op, args, kwargs, meta)
-
-        return super().call_operator(
-            exir_ops.edge.cadence.dequantize_per_tensor.default,
-            args,
-            kwargs,
-            meta,
-        )
