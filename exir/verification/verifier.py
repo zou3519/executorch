@@ -41,6 +41,12 @@ def _check_tensors_are_contiguous(gm: GraphModule) -> None:
 class EXIRATenDialectVerifierBase(Verifier):
     dialect = "OLD_EXIR_ATEN_DISABLED"
 
+    def __init__(
+        self, exception_list: Optional[List[torch._ops.OpOverload]] = None
+    ) -> None:
+        super().__init__()
+        self._exception_list = exception_list if exception_list else []
+
     def allowed_getattr_types(self) -> Tuple[Type[Any], ...]:
         return (
             torch.fx.GraphModule,
@@ -67,18 +73,24 @@ class EXIRATenDialectVerifier(EXIRATenDialectVerifierBase):
     def check_valid_op(self, op):
         if isinstance(op, OpOverload):
             # TODO These special ops should be removable easily.
-            if op.namespace in (
-                "quantized_decomposed",
-                "boltnn_nimble",
-                "nimble",
-                "quantized",
-            ) or op in (
-                torch.ops.aten.mkldnn_rnn_layer.default,
-                torch.ops.aten._upsample_bilinear2d_aa.default,
-                torch.ops.aten.quantize_per_tensor.default,
-                torch.ops.aten.dequantize.self,
-                torch.ops.aten.max.default,
-                torch.ops.aten.full_like.default,  # TODO(T183507359)
+            if (
+                op.namespace
+                in (
+                    "quantized_decomposed",
+                    "boltnn_nimble",
+                    "nimble",
+                    "quantized",
+                )
+                or op
+                in [
+                    torch.ops.aten.mkldnn_rnn_layer.default,
+                    torch.ops.aten._upsample_bilinear2d_aa.default,
+                    torch.ops.aten.quantize_per_tensor.default,
+                    torch.ops.aten.dequantize.self,
+                    torch.ops.aten.max.default,
+                    torch.ops.aten.full_like.default,  # TODO(T183507359)
+                ]
+                + self._exception_list
             ):
                 return
             if torch.Tag.core not in op.tags and torch.Tag.view_copy not in op.tags:
@@ -139,19 +151,21 @@ def EXIREdgeDialectVerifier(  # noqa: C901
     check_edge_ops: bool = True,
     enable: bool = True,
     class_only: bool = False,
+    exception_list: Optional[List[torch._ops.OpOverload]] = None,
 ):
     class _EXIREdgeDialectVerifier(Verifier):
         dialect = "EDGE"
 
         def __init__(self) -> None:
             self.check_edge_ops = check_edge_ops
-            self.aten_op_verifier = EXIRATenDialectVerifier()
+            self.aten_op_verifier = EXIRATenDialectVerifier(exception_list)
             self.check_valid_aten_op = self.aten_op_verifier.check_valid_op
 
             if self.check_edge_ops:
                 self.check_valid_op = self.check_valid_edge_op
             else:
                 self.check_valid_op = self.check_valid_aten_op
+            self._exception_list = exception_list if exception_list else []
 
         def allowed_getattr_types(self) -> Tuple[Type[Any], ...]:
             return (
@@ -167,7 +181,11 @@ def EXIREdgeDialectVerifier(  # noqa: C901
         def check_valid_edge_op(self, op):
             if not enable:
                 return
-            if op in [operator.getitem, torch.ops.aten.sym_size.int]:
+            if (
+                op
+                in [operator.getitem, torch.ops.aten.sym_size.int]
+                + self._exception_list
+            ):
                 return
 
             if isinstance(op, OpOverload) and not isinstance(op, EdgeOpOverload):
