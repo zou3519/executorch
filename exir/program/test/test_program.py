@@ -6,12 +6,16 @@
 
 # pye-strict
 
+import operator
 import unittest
 from typing import Any, Dict
 
 import torch
-from executorch.exir import ExecutorchBackendConfig
-from executorch.exir.backend.test.op_partitioner_demo import AddMulPartitionerDemo
+from executorch.exir import EdgeCompileConfig, ExecutorchBackendConfig
+from executorch.exir.backend.test.op_partitioner_demo import (
+    AddMulPartitionerDemo,
+    NonDecompTestPartitioner,
+)
 from executorch.exir.dialects._ops import ops as exir_ops
 from executorch.exir.error import ExportError
 from executorch.exir.lowered_backend_module import get_lowered_submodules
@@ -20,6 +24,7 @@ from executorch.exir.program._program import (
     EdgeProgramManager,
     ExecutorchProgramManager,
     to_edge,
+    to_edge_transform_and_lower,
 )
 from executorch.exir.verification.verifier import EXIREdgeDialectVerifier
 
@@ -27,6 +32,7 @@ from executorch.extension.pybindings.portable_lib import (
     _load_for_executorch_from_buffer,
 )
 from torch.export import export, ExportedProgram
+from torch.export._trace import _export
 
 from torch.library import impl, Library
 
@@ -400,3 +406,75 @@ class TestProgramManagers(unittest.TestCase):
 
         # This should not raise error
         self._test_edge_dialect_verifier(_use_foo_add, False)
+
+    def test_to_edge_transform_and_lower(self):
+        class TestLinear(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.linear = torch.nn.Linear(32, 16, bias=True)
+
+            def forward(self, x):
+                return self.linear(x)
+
+            @classmethod
+            def _get_random_inputs(cls):
+                x = torch.rand(8, 32)
+                return (x,)
+
+        class TestSDPA(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+
+            def forward(self, query, key, value):
+                return torch.ops.aten.scaled_dot_product_attention.default(
+                    query, key, value
+                )
+
+            @classmethod
+            def _get_random_inputs(cls):
+                d_k = 64
+                batch = 16
+                seq_len = 10
+                query = torch.rand(batch, seq_len, d_k)
+                key = torch.rand(batch, seq_len, d_k)
+                value = torch.rand(batch, seq_len, d_k)
+                return (query, key, value)
+
+        class TestLinearSDPACombined(torch.nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.linear = torch.nn.Linear(32, 16, bias=True)
+
+            def forward(self, x, query, key, value):
+                x = self.linear(x)
+                return (
+                    x,
+                    torch.ops.aten.scaled_dot_product_attention.default(
+                        query, key, value
+                    ),
+                )
+
+            @classmethod
+            def _get_random_inputs(cls):
+                return TestLinear._get_random_inputs() + TestSDPA._get_random_inputs()
+
+        def test_model_with_non_decomp_partitioner(model: torch.nn.Module):
+            ep = _export(model, model._get_random_inputs(), pre_dispatch=True)
+            edge = to_edge_transform_and_lower(
+                ep,
+                compile_config=EdgeCompileConfig(),
+                partitioner=NonDecompTestPartitioner(),
+            )
+            for node in edge.exported_program().graph_module.graph.nodes:
+                # There should only be a single call_function node in the graph
+                # and that should be a call_delegate node.
+                if node.op == "call_function" and node.target != operator.getitem:
+                    self.assertEqual(
+                        node.target, torch.ops.higher_order.executorch_call_delegate
+                    )
+
+        test_model_with_non_decomp_partitioner(TestLinear())
+
+        test_model_with_non_decomp_partitioner(TestSDPA())
+
+        test_model_with_non_decomp_partitioner(TestLinearSDPACombined())
